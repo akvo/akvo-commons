@@ -3,6 +3,7 @@
   :url "http://akvo.org"
   :license {:name "GNU Affero General Public License v3.0"
             :url "https://www.gnu.org/licenses/agpl-3.0.html"}
+  :signing {:gpg-key "devops@akvo.org"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [me.raynes/fs "1.4.6"]
                  [com.taoensso/timbre "3.3.1"]
