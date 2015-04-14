@@ -44,7 +44,8 @@
         s3bucket (get props "s3bucket")
         apiKey (get props "restPrivateKey")
         domain (format "%s.appspot.com" app-id)]
-    {:alias app-alias
+    {:app-id app-id
+     :alias app-alias
      :domain domain
      :access-key access-key
      :secret-key secret-key
@@ -77,7 +78,7 @@
                     (assoc res k (first v)))
         alias-fn (fn [res k v]
                    (assoc res k (:alias (first v))))]
-    (reset! configs (reduce-kv bucket-fn {} (group-by :s3bucket cfgs)))
+    (reset! configs (reduce-kv bucket-fn {} (group-by :app-id cfgs)))
     (reset! instance-alias (reduce-kv alias-fn {} (group-by :domain cfgs)))))
 
 (defn set-settings!
