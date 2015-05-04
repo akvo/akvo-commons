@@ -41,27 +41,6 @@
        (finally
          (.uninstall installer#)))))
 
-(defn ^:deprecated get-options
-  "Returns a RemoteApiOptions object. Deprecated, use with-datastore instead"
-  [server usr pwd]
-  (debugf "Creating RemoteApiOptions - server: %s - user: %s" server usr)
-  (doto
-    (RemoteApiOptions.)
-    (.server server 443)
-    (.credentials usr pwd)))
-
-(defn ^:deprecated get-installer
-  "Returns a RemoteApiInstaller object. Deprecated, use with-datastore instead"
-  [opts]
-  (try
-    (doto
-      (RemoteApiInstaller.)
-      (.install opts))
-    (catch IllegalStateException e
-      (info (.getMessage e)))
-    (catch IOException e
-      (error e "Error installing options"))))
-
 (defn get-fetch-options
   "Returns the fetch options for a PreparedQuery"
   ([]
@@ -70,11 +49,6 @@
     (FetchOptions$Builder/withChunkSize size))
   ([size cursor]
     (.startCursor (FetchOptions$Builder/withLimit size) cursor)))
-
-(defn ^:deprecated get-ds
-  "Returns an instance of a DatastoreService. Deprecated, use with-datastore instead"
-  []
-  (DatastoreServiceFactory/getDatastoreService))
 
 (defn get-filter
   "Helper function that returns a FilterPredicate based on a property"
@@ -96,17 +70,12 @@
 
 (defn put!
   "Creates a new Entity using Remote API"
-  [server usr pwd entity-name props]
+  [ds entity-name props]
   (debugf "Creating new entity - entity-name: %s - props: %s" entity-name props)
-  (let [opts (get-options server usr pwd)
-        installer (get-installer opts)
-        ds (get-ds)
-        entity (Entity. ^String entity-name)
+  (let [entity (Entity. ^String entity-name)
         ts (Date.)]
     (doseq [k (keys props)]
       (.setProperty entity (name k) (props k)))
     (.setProperty entity "createdDateTime" ts)
     (.setProperty entity "lastUpdateDateTime" ts)
-    (let [k (.put ds entity)]
-      (.uninstall installer)
-      k)))
+    (.put ds entity)))
