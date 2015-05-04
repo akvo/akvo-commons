@@ -20,8 +20,29 @@
      Query$FilterOperator Query$CompositeFilterOperator Query$FilterPredicate
      PreparedQuery FetchOptions FetchOptions$Builder KeyFactory Key]))
 
-(defn get-options
-  "Returns a RemoteApiOptions object"
+(defmacro with-datastore
+  "Evaluates body in a try expression with ds bound to a remote datastore object
+   built according to spec. The spec is a map consisting of
+     :server - The remote server (default \"localhost\")
+     :port - The remote port (default 8888)
+     :email - The email to use for authentication (default \"test@example.com\")
+     :password - The password to use for authentication (default \"\")"
+  [[ds spec] & body]
+  `(let [options# (doto (RemoteApiOptions.)
+                    (.server (:server ~spec "localhost")
+                             (:port ~spec 8888))
+                    (.credentials (:email ~spec "test@example.com")
+                                  (:password ~spec "")))
+         installer# (RemoteApiInstaller.)]
+     (.install installer# options#)
+     (try
+       (let [~ds (DatastoreServiceFactory/getDatastoreService)]
+         ~@body)
+       (finally
+         (.uninstall installer#)))))
+
+(defn ^:deprecated get-options
+  "Returns a RemoteApiOptions object. Deprecated, use with-datastore instead"
   [server usr pwd]
   (debugf "Creating RemoteApiOptions - server: %s - user: %s" server usr)
   (doto
@@ -29,8 +50,8 @@
     (.server server 443)
     (.credentials usr pwd)))
 
-(defn get-installer
-  "Returns a RemoteApiInstaller object"
+(defn ^:deprecated get-installer
+  "Returns a RemoteApiInstaller object. Deprecated, use with-datastore instead"
   [opts]
   (try
     (doto
@@ -50,8 +71,8 @@
   ([size cursor]
     (.startCursor (FetchOptions$Builder/withLimit size) cursor)))
 
-(defn get-ds
-  "Returns an instance of a DatastoreService"
+(defn ^:deprecated get-ds
+  "Returns an instance of a DatastoreService. Deprecated, use with-datastore instead"
   []
   (DatastoreServiceFactory/getDatastoreService))
 
