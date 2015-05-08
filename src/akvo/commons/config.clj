@@ -29,6 +29,8 @@
 
 (defonce settings (atom {}))
 
+(defonce s3bucket->app-id (atom {}))
+
 (defn get-bucket-name
   "Extracts the bucket name from an upload domain url: https://akvoflow-1.s3.amazonaws.com => akvoflow-1"
   [url]
@@ -52,10 +54,19 @@
      :s3bucket s3bucket
      :apiKey apiKey}))
 
+(defn find-config
+  "Find the config map for bucket-name or app-id"
+  [app-id-or-bucket]
+  (let [cfg @configs]
+    (or (get cfg app-id-or-bucket)
+        (get cfg (@s3bucket->app-id app-id-or-bucket))
+        (throw (ex-info "No config found"
+                        {:app-id-or-bucket app-id-or-bucket})))))
+
 (defn get-criteria
   "Returns a map of upload configuration criteria"
   [bucket-name surveyId]
-  (let [config (@configs bucket-name)]
+  (let [config (find-config bucket-name)]
     (stringify-keys (assoc config :surveyId surveyId))))
 
 (defn get-domain
@@ -79,6 +90,7 @@
         alias-fn (fn [res k v]
                    (assoc res k (:alias (first v))))]
     (reset! configs (reduce-kv bucket-fn {} (group-by :app-id cfgs)))
+    (reset! s3bucket->app-id (into {} (map (juxt :s3bucket :app-id) cfgs)))
     (reset! instance-alias (reduce-kv alias-fn {} (group-by :domain cfgs)))))
 
 (defn set-settings!

@@ -20,26 +20,26 @@
      Query$FilterOperator Query$CompositeFilterOperator Query$FilterPredicate
      PreparedQuery FetchOptions FetchOptions$Builder KeyFactory Key]))
 
-(defn get-options
-  "Returns a RemoteApiOptions object"
-  [server usr pwd]
-  (debugf "Creating RemoteApiOptions - server: %s - user: %s" server usr)
-  (doto
-    (RemoteApiOptions.)
-    (.server server 443)
-    (.credentials usr pwd)))
-
-(defn get-installer
-  "Returns a RemoteApiInstaller object"
-  [opts]
-  (try
-    (doto
-      (RemoteApiInstaller.)
-      (.install opts))
-    (catch IllegalStateException e
-      (info (.getMessage e)))
-    (catch IOException e
-      (error e "Error installing options"))))
+(defmacro with-datastore
+  "Evaluates body in a try expression with ds bound to a remote datastore object
+   built according to spec. The spec is a map consisting of
+     :server - The remote server (default \"localhost\")
+     :port - The remote port (default 8888)
+     :email - The email to use for authentication (default \"test@example.com\")
+     :password - The password to use for authentication (default \"\")"
+  [[ds spec] & body]
+  `(let [options# (doto (RemoteApiOptions.)
+                    (.server (:server ~spec "localhost")
+                             (:port ~spec 8888))
+                    (.credentials (:email ~spec "test@example.com")
+                                  (:password ~spec "")))
+         installer# (RemoteApiInstaller.)]
+     (.install installer# options#)
+     (try
+       (let [~ds (DatastoreServiceFactory/getDatastoreService)]
+         ~@body)
+       (finally
+         (.uninstall installer#)))))
 
 (defn get-fetch-options
   "Returns the fetch options for a PreparedQuery"
@@ -49,11 +49,6 @@
     (FetchOptions$Builder/withChunkSize size))
   ([size cursor]
     (.startCursor (FetchOptions$Builder/withLimit size) cursor)))
-
-(defn get-ds
-  "Returns an instance of a DatastoreService"
-  []
-  (DatastoreServiceFactory/getDatastoreService))
 
 (defn get-filter
   "Helper function that returns a FilterPredicate based on a property"
@@ -75,17 +70,12 @@
 
 (defn put!
   "Creates a new Entity using Remote API"
-  [server usr pwd entity-name props]
+  [ds entity-name props]
   (debugf "Creating new entity - entity-name: %s - props: %s" entity-name props)
-  (let [opts (get-options server usr pwd)
-        installer (get-installer opts)
-        ds (get-ds)
-        entity (Entity. ^String entity-name)
+  (let [entity (Entity. ^String entity-name)
         ts (Date.)]
     (doseq [k (keys props)]
       (.setProperty entity (name k) (props k)))
     (.setProperty entity "createdDateTime" ts)
     (.setProperty entity "lastUpdateDateTime" ts)
-    (let [k (.put ds entity)]
-      (.uninstall installer)
-      k)))
+    (.put ds entity)))
