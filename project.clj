@@ -1,4 +1,4 @@
-(defproject org.akvo/commons "0.2.0-SNAPSHOT"
+(defproject org.akvo/commons "0.2.0"
   :description "Akvo utility library"
   :url "http://akvo.org"
   :license {:name "GNU Affero General Public License v3.0"
