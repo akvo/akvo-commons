@@ -20,7 +20,7 @@
            com.nimbusds.jose.jwk.RSAKey
            com.nimbusds.jose.crypto.RSASSAVerifier))
 
-(def rsa (RSAKey/parse (slurp "keycloak.cert")))
+(def rsa (RSAKey/parse (slurp (:cert config/settings))))
 
 (defn validate-token [token]
   (let [jwt (SignedJWT/parse token)
