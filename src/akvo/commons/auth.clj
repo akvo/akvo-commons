@@ -24,11 +24,12 @@
 
 (defn validate-token [token]
   (let [jwt (SignedJWT/parse token)
-        verifier (RSASSAVerifier. (.toRSAPublicKey rsa))]
+        verifier (RSASSAVerifier. (.toRSAPublicKey rsa))
+        exp (if jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)) nil)]
     (and
       (.verify jwt verifier)
-      (< (-> jwt .getJWTClaimsSet (.getClaim "exp"))
-         (/ (System/currentTimeMillis) 1000)))))
+      exp
+      (.after exp (java.util.Date.)))))
 
 (defn authorized? [req]
   (let [auth-header (get-in req [:headers "authorization"])
