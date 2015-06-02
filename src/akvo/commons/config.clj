@@ -45,14 +45,18 @@
         secret-key (get props "aws_secret_key")
         s3bucket (get props "s3bucket")
         apiKey (get props "restPrivateKey")
-        domain (format "%s.appspot.com" app-id)]
+        domain (format "%s.appspot.com" app-id)
+        cartodb-api-key (get props "cartodbApiKey")
+        cartodb-sql-api (get props "cartodbSqlApi")]
     {:app-id app-id
      :alias app-alias
      :domain domain
      :access-key access-key
      :secret-key secret-key
      :s3bucket s3bucket
-     :apiKey apiKey}))
+     :apiKey apiKey
+     :cartodb-api-key cartodb-api-key
+     :cartodb-sql-api cartodb-sql-api}))
 
 (defn find-config
   "Find the config map for bucket-name or app-id"
