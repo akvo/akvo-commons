@@ -20,7 +20,7 @@
            com.nimbusds.jose.jwk.RSAKey
            com.nimbusds.jose.crypto.RSASSAVerifier))
 
-(def rsa (RSAKey/parse (slurp (:cert config/settings))))
+(def rsa (RSAKey/parse (slurp (:certs config/settings))))
 
 (defn validate-token [token]
   (let [jwt (SignedJWT/parse token)
@@ -36,13 +36,13 @@
         token (if (and (not (str/blank? auth-header))
                        (.startsWith auth-header "Bearer "))
                 (.substring auth-header 7))]
-    (if token
-      (validate-token token)
-      false)))
+    (if (and token (validate-token token))
+      token
+      nil)))
 
 (defn wrap-auth [handler]
   (fn [req]
-    (if (authorized? req)
-      (handler req)
+    (if-let [jwt (authorized? req)]
+      (handler (assoc req :jwt jwt))
       (-> (response "Access Denied")
           (status 403)))))
