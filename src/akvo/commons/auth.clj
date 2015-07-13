@@ -14,15 +14,15 @@
 
 (ns akvo.commons.auth
   (:require [clojure.string :as str]
-    [akvo.commons.config :as config]
     [ring.util.response :refer (response status)])
   (:import com.nimbusds.jwt.SignedJWT
            com.nimbusds.jose.jwk.RSAKey
            com.nimbusds.jose.crypto.RSASSAVerifier))
 
-(def rsa (RSAKey/parse (slurp (:certs config/settings))))
+(defn rsa-key [cert-file]
+   (RSAKey/parse (slurp cert-file)))
 
-(defn validate-token [token]
+(defn validate-token [token rsa]
   (let [jwt (SignedJWT/parse token)
         verifier (RSASSAVerifier. (.toRSAPublicKey rsa))
         exp (if jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)) nil)]
@@ -31,18 +31,19 @@
       exp
       (.after exp (java.util.Date.)))))
 
-(defn authorized? [req]
+(defn authorized? [req rsa]
   (let [auth-header (get-in req [:headers "authorization"])
         token (if (and (not (str/blank? auth-header))
                        (.startsWith auth-header "Bearer "))
                 (.substring auth-header 7))]
-    (if (and token (validate-token token))
+    (if (and token (validate-token token rsa))
       token
       nil)))
 
-(defn wrap-auth [handler]
-  (fn [req]
-    (if-let [jwt (authorized? req)]
-      (handler (assoc req :jwt jwt))
-      (-> (response "Access Denied")
-          (status 403)))))
+(defn wrap-auth [handler cert-file]
+  (let [rsa (rsa-key cert-file)]
+    (fn [req]
+      (if-let [jwt (authorized? req rsa)]
+        (handler (assoc req :jwt jwt))
+        (-> (response "Access Denied")
+            (status 403))))))
