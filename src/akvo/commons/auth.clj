@@ -14,7 +14,7 @@
 
 (ns akvo.commons.auth
   (:require [clojure.string :as str]
-    [ring.util.response :refer (response status)])
+            [ring.util.response :refer (response status)])
   (:import com.nimbusds.jwt.SignedJWT
            com.nimbusds.jose.jwk.RSAKey
            com.nimbusds.jose.crypto.RSASSAVerifier))
