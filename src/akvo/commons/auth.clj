@@ -25,7 +25,7 @@
 (defn validate-token [token rsa]
   (let [jwt (SignedJWT/parse token)
         verifier (RSASSAVerifier. (.toRSAPublicKey rsa))
-        exp (if jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)) nil)]
+        exp (when jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)))]
     (and
       (.verify jwt verifier)
       exp
