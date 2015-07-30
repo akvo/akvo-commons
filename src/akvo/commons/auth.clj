@@ -35,7 +35,7 @@
   (let [auth-header (get-in req [:headers "authorization"])
         token (when (and (not (str/blank? auth-header))
                        (.startsWith auth-header "Bearer "))
-                (.substring auth-header 7))]
+                (subs auth-header 7))]
     (when (and token (validate-token token rsa))
       token)))
 
