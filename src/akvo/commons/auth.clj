@@ -33,12 +33,11 @@
 
 (defn authorized? [req rsa]
   (let [auth-header (get-in req [:headers "authorization"])
-        token (if (and (not (str/blank? auth-header))
+        token (when (and (not (str/blank? auth-header))
                        (.startsWith auth-header "Bearer "))
                 (.substring auth-header 7))]
-    (if (and token (validate-token token rsa))
-      token
-      nil)))
+    (when (and token (validate-token token rsa))
+      token)))
 
 (defn wrap-auth [handler cert-file]
   (let [rsa (rsa-key cert-file)]
