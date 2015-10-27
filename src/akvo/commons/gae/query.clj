@@ -132,6 +132,20 @@
             :projection projection}]
      (.asSingleEntity (.prepare ds (query q))))))
 
+(defn select-properties
+  "Returns a map with props => value for an Entity
+
+  Example
+  (select-properties e [\"description\" \"name\" \"parentId\"])
+  => {\"description\" \"Foo\"
+      \"name\" \"Bar\"
+      \"parentId\" 0}"
+  [^Entity e props]
+  (reduce (fn [result prop]
+            (assoc result prop (.getProperty e prop)))
+          {}
+          props))
+
 (comment
   ;; Examples
 
