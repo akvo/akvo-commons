@@ -14,7 +14,7 @@
 
 (ns akvo.commons.config
   (:import java.io.File
-    [com.google.apphosting.utils.config AppEngineWebXml AppEngineWebXmlReader AppEngineConfigException])
+    [com.google.apphosting.utils.config AppEngineWebXmlReader AppEngineConfigException])
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.java.shell :as shell]
@@ -135,3 +135,15 @@
 
 (defn new-akvoflow-config [path]
   (map->FLOWConfig {:path path}))
+
+(defrecord Settings [path]
+
+  component/Lifecycle
+
+  (start [this]
+    (into this (-> path (io/file) (slurp) (edn/read-string))))
+
+  (stop [this]))
+
+(defn new-settings [path]
+  (map->Settings {:path path}))
