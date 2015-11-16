@@ -1,4 +1,4 @@
-(defproject org.akvo/commons "0.3.0"
+(defproject org.akvo/commons "0.4.0-SNAPSHOT"
   :description "Akvo utility library"
   :url "http://akvo.org"
   :license {:name "GNU Affero General Public License v3.0"
@@ -11,4 +11,5 @@
                  [com.google.appengine/appengine-remote-api "1.9.9"]
                  [com.google.appengine/appengine-api-1.0-sdk "1.9.9"]
                  [ring/ring-core "1.3.1"]
-                 [com.nimbusds/nimbus-jose-jwt "3.10"]])
+                 [com.nimbusds/nimbus-jose-jwt "3.10"]
+                 [com.stuartsierra/component "0.3.0"]])
