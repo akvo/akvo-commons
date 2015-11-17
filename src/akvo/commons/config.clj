@@ -136,7 +136,7 @@
 (defn new-akvoflow-config [path]
   (map->FLOWConfig {:path path}))
 
-(defrecord Settings [path]
+(defrecord Config [path]
 
   component/Lifecycle
 
@@ -145,5 +145,5 @@
 
   (stop [this]))
 
-(defn new-settings [path]
+(defn new-config [path]
   (map->Settings {:path path}))
