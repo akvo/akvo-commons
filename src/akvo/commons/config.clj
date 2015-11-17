@@ -146,4 +146,4 @@
   (stop [this]))
 
 (defn new-config [path]
-  (map->Settings {:path path}))
+  (map->Config {:path path}))
