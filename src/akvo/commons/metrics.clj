@@ -14,7 +14,7 @@
         (send s/sockagt (fn [ds]
                           (when ds
                             (.close ds))))
-        (swap! s/cfg (constantly nil))
+        (reset! s/cfg nil)
         (assoc this :statsd nil))
       this)))
 
