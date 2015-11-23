@@ -11,7 +11,7 @@
   (stop [this]
     (if statsd
       (do
-        (send s/sockagt nil)
+        (send s/sockagt (constantly nil))
         (swap! s/cfg nil)
         (assoc this :statsd nil))
       this)))
