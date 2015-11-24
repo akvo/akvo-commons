@@ -14,7 +14,7 @@
 
 (ns akvo.commons.config
   (:import java.io.File
-    [com.google.apphosting.utils.config AppEngineWebXml AppEngineWebXmlReader AppEngineConfigException])
+    [com.google.apphosting.utils.config AppEngineWebXmlReader])
   (:require [clojure.java.io :as io]
     [clojure.string :as str]
     [clojure.java.shell :as shell]
