@@ -187,10 +187,10 @@
   (require '[akvo.commons.config :as config])
   (require '[akvo.commons.gae :as gae])
   (config/set-settings! "../akvo-flow-services/config/my-config.edn")
-  (def ds-spec {:server "akvoflowsandbox.appspot.com"
+  (def ds-spec {:hostname "akvoflowsandbox.appspot.com"
                 :port 443
-                :email (:username @config/settings)
-                :password (:password @config/settings)})
+                :service-account-id "account-1@akvoflowsandbox.iam.gserviceaccount.com"
+                :private-key-file "../akvo-flow-server-config/akvoflowsandbox/akvoflowsandbox.p12"})
 
   (gae/with-datastore [ds ds-spec]
     (seq (result ds
