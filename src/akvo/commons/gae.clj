@@ -1,4 +1,4 @@
-;  Copyright (C) 2014 Stichting Akvo (Akvo Foundation)
+;  Copyright (C) 2014-2015 Stichting Akvo (Akvo Foundation)
 ;
 ;  This file is part of Akvo FLOW.
 ;
@@ -13,26 +13,32 @@
 ;  The full license text can also be seen at <http://www.gnu.org/licenses/agpl.html>.
 
 (ns akvo.commons.gae
-  (:require [taoensso.timbre :as timbre :refer (info debugf error)])
-  (:import java.util.Date java.io.IOException
+  (:require [taoensso.timbre :refer (info debugf error)])
+  (:import java.util.Date
     [com.google.appengine.tools.remoteapi RemoteApiInstaller RemoteApiOptions]
-    [com.google.appengine.api.datastore DatastoreServiceFactory Entity Query
-     Query$FilterOperator Query$CompositeFilterOperator Query$FilterPredicate
-     PreparedQuery FetchOptions FetchOptions$Builder KeyFactory Key]))
+    [com.google.appengine.api.datastore DatastoreServiceFactory Entity Query$FilterOperator
+                                        Query$FilterPredicate FetchOptions$Builder KeyFactory]))
+
+(defn remote-options [spec]
+  (let [hostname (:hostname spec "localhost")
+        port (:port spec 8888)]
+    (if (= "localhost" hostname)
+      (doto (RemoteApiOptions.)
+        (.server hostname port)
+        (.useDevelopmentServerCredential))
+      (doto (RemoteApiOptions.)
+        (.server hostname port)
+        (.useServiceAccountCredential (:service-account-id spec) (:private-key-file spec))))))
 
 (defmacro with-datastore
   "Evaluates body in a try expression with ds bound to a remote datastore object
    built according to spec. The spec is a map consisting of
-     :server - The remote server (default \"localhost\")
+     :hostname - The remote server (default \"localhost\")
      :port - The remote port (default 8888)
-     :email - The email to use for authentication (default \"test@example.com\")
-     :password - The password to use for authentication (default \"\")"
+     :service-account-id - The service account id (required for production envs)
+     :private-key-file - The absolute path to private key in P12 format (required for production envs)"
   [[ds spec] & body]
-  `(let [options# (doto (RemoteApiOptions.)
-                    (.server (:server ~spec "localhost")
-                             (:port ~spec 8888))
-                    (.credentials (:email ~spec "test@example.com")
-                                  (:password ~spec "")))
+  `(let [options# (remote-options ~spec)
          installer# (RemoteApiInstaller.)]
      (.install installer# options#)
      (try

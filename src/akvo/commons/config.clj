@@ -1,4 +1,4 @@
-;  Copyright (C) 2013-2014 Stichting Akvo (Akvo Foundation)
+;  Copyright (C) 2013-2015 Stichting Akvo (Akvo Foundation)
 ;
 ;  This file is part of Akvo FLOW.
 ;
@@ -14,7 +14,7 @@
 
 (ns akvo.commons.config
   (:import java.io.File
-    [com.google.apphosting.utils.config AppEngineWebXml AppEngineWebXmlReader AppEngineConfigException])
+    [com.google.apphosting.utils.config AppEngineWebXmlReader])
   (:require [clojure.java.io :as io]
     [clojure.string :as str]
     [clojure.java.shell :as shell]
@@ -47,7 +47,9 @@
         apiKey (get props "restPrivateKey")
         domain (format "%s.appspot.com" app-id)
         cartodb-api-key (get props "cartodbApiKey")
-        cartodb-sql-api (get props "cartodbSqlApi")]
+        cartodb-sql-api (get props "cartodbSqlApi")
+        service-account-id (get props "serviceAccountId")
+        private-key-file (format "%s/%s.p12" (.getParent file) app-id)]
     {:app-id app-id
      :alias app-alias
      :domain domain
@@ -56,7 +58,9 @@
      :s3bucket s3bucket
      :apiKey apiKey
      :cartodb-api-key cartodb-api-key
-     :cartodb-sql-api cartodb-sql-api}))
+     :cartodb-sql-api cartodb-sql-api
+     :service-account-id service-account-id
+     :private-key-file private-key-file}))
 
 (defn find-config
   "Find the config map for bucket-name or app-id"
