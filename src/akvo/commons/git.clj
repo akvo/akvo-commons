@@ -1,4 +1,4 @@
-;  Copyright (C) 2013-2015 Stichting Akvo (Akvo Foundation)
+;  Copyright (C) 2015 Stichting Akvo (Akvo Foundation)
 ;
 ;  This file is part of Akvo FLOW.
 ;
@@ -29,7 +29,8 @@
                      (shell/sh "git" "pull")))]
     (when-not (zero? exit-code)
       (throw (ex-info "Failed to pull repo"
-                      {:repo repo
+                      {:repo-dir repo-dir
+                       :clone-url clone-url
                        :exit-code exit-code})))))
 
 (defn clone [repo-dir clone-url]
