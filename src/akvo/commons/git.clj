@@ -20,7 +20,10 @@
   (.mkdirs (io/file dir)))
 
 (defn repo-name [^String clone-url]
-  (subs clone-url (inc (.lastIndexOf clone-url "/"))))
+  (let [name (subs clone-url (inc (.lastIndexOf clone-url "/")))]
+    (if (.endsWith name ".git")
+      (subs name 0 (- (count name) 4))
+      name)))
 
 (defn pull [repo-dir ^String clone-url]
   (let [repo (repo-name clone-url)
