@@ -14,12 +14,17 @@
 
 (ns akvo.commons.reflection-test
   (:require [clojure.test :refer [deftest testing is]]
-            [clojure.java.shell :as shell]))
+            [clojure.java.shell :as shell]
+            [clojure.string :as str]))
 
-(def lein-path (or (System/getenv "LEIN_PATH")
-                   (str (System/getProperty "user.home") "/.local/bin/lein")))
+(defn lein-path []
+  (or (System/getenv "LEIN_PATH")
+      (let [lein (shell/sh "which" "lein")]
+        (when (zero? (:exit lein))
+          (str/trim-newline (:out lein))))
+      (str (System/getProperty "user.home") "/.local/bin/lein")))
 
 (deftest warnings
   (testing "Reflection warning"
-    (let [result (:err (shell/sh lein-path "check"))]
+    (let [result (:err (shell/sh (lein-path) "check"))]
       (is (= false (.contains ^String result "Reflection warning, akvo/commons/"))))))
