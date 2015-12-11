@@ -16,8 +16,9 @@
   (:require [taoensso.timbre :refer (info debugf error)])
   (:import java.util.Date
     [com.google.appengine.tools.remoteapi RemoteApiInstaller RemoteApiOptions]
-    [com.google.appengine.api.datastore DatastoreServiceFactory Entity Query$FilterOperator
-                                        Query$FilterPredicate FetchOptions$Builder KeyFactory]))
+    [com.google.appengine.api.datastore DatastoreService DatastoreServiceFactory
+                                        Entity KeyFactory Query$FilterOperator
+                                        Query$FilterPredicate FetchOptions$Builder]))
 
 (defn remote-options [spec]
   (let [hostname (:hostname spec "localhost")
@@ -28,7 +29,8 @@
         (.useDevelopmentServerCredential))
       (doto (RemoteApiOptions.)
         (.server hostname port)
-        (.useServiceAccountCredential (:service-account-id spec) (:private-key-file spec))))))
+        (.useServiceAccountCredential ^String (:service-account-id spec)
+                                      ^String (:private-key-file spec))))))
 
 (defmacro with-datastore
   "Evaluates body in a try expression with ds bound to a remote datastore object
@@ -49,8 +51,9 @@
 
 (defn get-fetch-options
   "Returns the fetch options for a PreparedQuery"
+  {:deprecated "0.4.2"}
   ([]
-    (FetchOptions$Builder/withDefaults))
+   (FetchOptions$Builder/withDefaults))
   ([size]
     (FetchOptions$Builder/withChunkSize size))
   ([size cursor]
@@ -58,6 +61,7 @@
 
 (defn get-filter
   "Helper function that returns a FilterPredicate based on a property"
+  {:deprecated "0.4.2"}
   ([property value]
     (Query$FilterPredicate. property Query$FilterOperator/EQUAL value))
   ([property value operator]
@@ -76,7 +80,7 @@
 
 (defn put!
   "Creates a new Entity using Remote API"
-  [ds entity-name props]
+  [^DatastoreService ds entity-name props]
   (debugf "Creating new entity - entity-name: %s - props: %s" entity-name props)
   (let [entity (Entity. ^String entity-name)
         ts (Date.)]

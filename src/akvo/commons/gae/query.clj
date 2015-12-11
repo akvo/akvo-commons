@@ -24,6 +24,7 @@
              KeyFactory
              PreparedQuery
              Query
+             PropertyProjection
              Query$CompositeFilterOperator
              Query$FilterOperator
              Query$FilterPredicate
@@ -54,10 +55,10 @@
   (Query$FilterPredicate. property Query$FilterOperator/IN value))
 
 (defn and [& filters]
-  (Query$CompositeFilterOperator/and filters))
+  (Query$CompositeFilterOperator/and ^java.util.Collection filters))
 
 (defn or [& filters]
-  (Query$CompositeFilterOperator/or filters))
+  (Query$CompositeFilterOperator/or ^java.util.Collection filters))
 
 ;; Sorting
 (defn- dir [d]
@@ -80,7 +81,7 @@
 ;; https://cloud.google.com/appengine/docs/java/datastore/projectionqueries
 (defn add-projections [^Query q ps]
   (doseq [[property class] ps]
-    (.addProjection q property class))
+    (.addProjection q (PropertyProjection. property class)))
   q)
 
 (defn query
@@ -94,13 +95,12 @@
    :distinct? true/false (only applicable if projections is specified
   "
   [{:keys [kind filter sort-by keys-only projections distinct]}]
-  (cond-> (Query. kind)
+  (cond-> (Query. ^String kind)
     filter (.setFilter filter)
-    sort-by (add-sorts sort-by)
+    sort-by ^Query (add-sorts sort-by)
     keys-only (.setKeysOnly)
-    projections (add-projections projections)
+    projections ^Query (add-projections projections)
     distinct (.setDistinct true)))
-
 
 ;; Fetch options
 (defn fetch-options
@@ -138,7 +138,8 @@
    (entity ds kind filter-or-id nil))
   ([^DatastoreService ds kind filter-or-id projection]
    (let [filter (cond
-                  (integer? filter-or-id) (= key (KeyFactory/createKey kind filter-or-id))
+                  (integer? filter-or-id) (= key (KeyFactory/createKey ^String kind
+                                                                       ^Long filter-or-id))
                   (instance? Key filter-or-id) (= key filter-or-id)
                   :else filter-or-id)
          q {:kind kind
