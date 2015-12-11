@@ -36,7 +36,7 @@
   [url]
   (last (str/split (first (str/split url #"\.s3\.amazonaws\.com")) #"//")))
 
-(defn- get-config [file]
+(defn- get-config [^File file]
   (let [appengine-web (-> file .getAbsolutePath (AppEngineWebXmlReader. "") .readAppEngineWebXml)
         app-id (.getAppId appengine-web)
         props (.getSystemProperties appengine-web)

@@ -20,9 +20,9 @@
            com.nimbusds.jose.crypto.RSASSAVerifier))
 
 (defn rsa-key [cert-file]
-  (RSAKey/parse (slurp cert-file)))
+  (RSAKey/parse ^String (slurp cert-file)))
 
-(defn validate-token [token rsa]
+(defn validate-token [^String token ^RSAKey rsa]
   (let [jwt (SignedJWT/parse token)
         verifier (RSASSAVerifier. (.toRSAPublicKey rsa))
         exp (when jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)))]
@@ -34,7 +34,7 @@
 (defn authorized? [req rsa]
   (let [auth-header (get-in req [:headers "authorization"])
         token (when (and (not (str/blank? auth-header))
-                         (.startsWith auth-header "Bearer "))
+                         (.startsWith ^String auth-header "Bearer "))
                 (subs auth-header 7))]
     (when (and token (validate-token token rsa))
       token)))
