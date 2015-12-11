@@ -35,3 +35,10 @@
     (is (nil? (pull *repo-dir* clone-url))))
   (testing "clone or pull repo"
     (is (nil? (clone-or-pull *repo-dir* clone-url)))))
+
+(deftest repo-name-test
+  (testing "repo-name"
+    (are [clone-url] (= "akvo-commons" (repo-name clone-url))
+      "https://github.com/akvo/akvo-commons"
+      "https://github.com/akvo/akvo-commons.git"
+      "git@github.com:akvo/akvo-commons.git")))
