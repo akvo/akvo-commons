@@ -1,4 +1,4 @@
-;  Copyright (C) 2015 Stichting Akvo (Akvo Foundation)
+;  Copyright (C) 2015-2016 Stichting Akvo (Akvo Foundation)
 ;
 ;  This file is part of Akvo FLOW.
 ;
@@ -13,34 +13,20 @@
 ;  The full license text can also be seen at <http://www.gnu.org/licenses/agpl.html>.
 
 (ns akvo.commons.auth
-  (:require [clojure.string :as str]
+  (:require [akvo.commons.jwt :as jwt]
             [ring.util.response :refer (response status)])
-  (:import com.nimbusds.jwt.SignedJWT
-           com.nimbusds.jose.jwk.RSAKey
-           com.nimbusds.jose.crypto.RSASSAVerifier))
-
-(defn rsa-key [cert-file]
-  (RSAKey/parse ^String (slurp cert-file)))
+  (:import com.nimbusds.jose.crypto.RSASSAVerifier))
 
 (defn validate-token [^String token ^RSAKey rsa]
-  (let [jwt (SignedJWT/parse token)
-        verifier (RSASSAVerifier. (.toRSAPublicKey rsa))
-        exp (when jwt (-> jwt .getJWTClaimsSet (.getExpirationTime)))]
-    (and
-      (.verify jwt verifier)
-      exp
-      (.after exp (java.util.Date.)))))
+  (jwt/verified-claims token (RSASSAVerifier. (.toRSAPublicKey rsa)) {}))
 
 (defn authorized? [req rsa]
-  (let [auth-header (get-in req [:headers "authorization"])
-        token (when (and (not (str/blank? auth-header))
-                         (.startsWith ^String auth-header "Bearer "))
-                (subs auth-header 7))]
+  (let [token (jwt/jwt-token req)]
     (when (and token (validate-token token rsa))
       token)))
 
 (defn wrap-auth [handler cert-file]
-  (let [rsa (rsa-key cert-file)]
+  (let [rsa (jwt/rsa-key (slurp cert-file))]
     (fn [req]
       (if-let [jwt (authorized? req rsa)]
         (handler (assoc req :jwt jwt))
