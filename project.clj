@@ -14,4 +14,5 @@
                  [com.google.appengine/appengine-remote-api "1.9.28"]
                  [com.google.appengine/appengine-api-1.0-sdk "1.9.28"]
                  [ring/ring-core "1.3.1"]
-                 [com.nimbusds/nimbus-jose-jwt "3.10"]])
+                 [com.nimbusds/nimbus-jose-jwt "3.10"]
+                 [ring/ring-mock "0.3.0"]])

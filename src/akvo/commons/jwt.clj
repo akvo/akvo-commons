@@ -13,18 +13,22 @@
 ;  The full license text can also be seen at <http://www.gnu.org/licenses/agpl.html>.
 
 (ns akvo.commons.jwt
-  (:require [clojure.string :as str]
-            [ring.util.response :refer (response status)])
+  (:require [clojure.string :as str])
   (:import java.util.Date
            java.text.ParseException
            com.nimbusds.jwt.SignedJWT
            com.nimbusds.jose.jwk.RSAKey
+           com.nimbusds.jose.jwk.JWKSet
            com.nimbusds.jose.crypto.RSASSAVerifier))
 
 (defn rsa-key
   "Parse an RSA certificate string"
-  [cert]
-  (RSAKey/parse ^String cert))
+  ([^String cert]
+   (RSAKey/parse cert))
+  ([^String cert n]
+   (-> (JWKSet/parse cert)
+       .getKeys
+       (.get n))))
 
 (defn jwt-token
   "Get the jwt token from the authorization header of the request"
@@ -66,11 +70,10 @@
   :iat-interval [before after] Compare the 'issued at' time (iat) with
   the interval [now - before, now + after] and consider the token
   valid only if the iat falls within this interval (in seconds)"
-  ([handler cert]
-   (wrap-jwt-claims handler cert {}))
-  ([handler cert opts]
-   (let [rsa (rsa-key cert)
-         verifier (RSASSAVerifier. (.toRSAPublicKey rsa))]
+  ([handler rsa-key]
+   (wrap-jwt-claims handler rsa-key {}))
+  ([handler rsa-key opts]
+   (let [verifier (RSASSAVerifier. (.toRSAPublicKey rsa-key))]
      (fn [req]
        (if-let [token (jwt-token req)]
          (try
