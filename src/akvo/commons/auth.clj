@@ -15,7 +15,8 @@
 (ns akvo.commons.auth
   (:require [akvo.commons.jwt :as jwt]
             [ring.util.response :refer (response status)])
-  (:import com.nimbusds.jose.crypto.RSASSAVerifier))
+  (:import com.nimbusds.jose.crypto.RSASSAVerifier
+           com.nimbusds.jose.jwk.RSAKey))
 
 (defn validate-token [^String token ^RSAKey rsa]
   (jwt/verified-claims token (RSASSAVerifier. (.toRSAPublicKey rsa)) {}))

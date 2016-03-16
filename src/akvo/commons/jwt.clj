@@ -24,11 +24,12 @@
 (defn rsa-key
   "Parse an RSA certificate string"
   ([^String cert]
-   (RSAKey/parse cert))
+   (.toRSAPublicKey (RSAKey/parse cert)))
   ([^String cert n]
-   (-> (JWKSet/parse cert)
-       .getKeys
-       (.get n))))
+   (let [rsa-key (-> (JWKSet/parse cert)
+                     .getKeys
+                     (.get n))]
+     (.toRSAPublicKey ^RSAKey rsa-key))))
 
 (defn jwt-token
   "Get the jwt token from the authorization header of the request"
@@ -42,7 +43,7 @@
   "Parses and verifies jwt token and returns the claims if the token
   is verified, otherwise nil. Throws ParseException if the token can
   not be parsed."
-  [token verifier opts]
+  [^String token verifier opts]
   (let [jwt (SignedJWT/parse token)
         claims (.getJWTClaimsSet jwt)
         exp (.getExpirationTime claims)
@@ -55,10 +56,10 @@
                (if nbf (.before nbf now) true)
                (if (and iat before after)
                  (let [time (.getTime now)
-                       min-iat (Date. (- time (* before 1000)))
-                       max-iat (Date. (+ time (* after 1000)))]
-                   (and (.after min-iat iat)
-                        (.before max-iat iat)))
+                       min-iat (Date. ^Long (- time (* before 1000)))
+                       max-iat (Date. ^Long (+ time (* after 1000)))]
+                   (and (.after max-iat iat)
+                        (.before min-iat iat)))
                  true))
       (into {} (.getAllClaims claims)))))
 
@@ -73,7 +74,7 @@
   ([handler rsa-key]
    (wrap-jwt-claims handler rsa-key {}))
   ([handler rsa-key opts]
-   (let [verifier (RSASSAVerifier. (.toRSAPublicKey rsa-key))]
+   (let [verifier (RSASSAVerifier. rsa-key)]
      (fn [req]
        (if-let [token (jwt-token req)]
          (try
