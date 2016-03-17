@@ -43,7 +43,7 @@
   "Parses and verifies jwt token and returns the claims if the token
   is verified, otherwise nil. Throws ParseException if the token can
   not be parsed."
-  [^String token verifier opts]
+  [^String token verifier issuer opts]
   (let [jwt (SignedJWT/parse token)
         claims (.getJWTClaimsSet jwt)
         exp (.getExpirationTime claims)
@@ -52,6 +52,7 @@
         now (Date.)
         [before after] (:iat-interval opts)]
     (when (and (.verify jwt verifier)
+               (= issuer (.getIssuer claims))
                (if exp (.after exp now) true)
                (if nbf (.before nbf now) true)
                (if (and iat before after)
@@ -71,14 +72,14 @@
   :iat-interval [before after] Compare the 'issued at' time (iat) with
   the interval [now - before, now + after] and consider the token
   valid only if the iat falls within this interval (in seconds)"
-  ([handler rsa-key]
-   (wrap-jwt-claims handler rsa-key {}))
-  ([handler rsa-key opts]
+  ([handler rsa-key issuer]
+   (wrap-jwt-claims handler rsa-key issuer {}))
+  ([handler rsa-key issuer opts]
    (let [verifier (RSASSAVerifier. rsa-key)]
      (fn [req]
        (if-let [token (jwt-token req)]
          (try
-           (if-let [claims (verified-claims token verifier opts)]
+           (if-let [claims (verified-claims token verifier issuer opts)]
              (handler (assoc req :jwt-claims claims))
              (handler req))
            (catch ParseException e

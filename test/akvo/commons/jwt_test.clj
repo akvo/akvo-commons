@@ -1,5 +1,6 @@
 (ns akvo.commons.jwt-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer :all]
             [akvo.commons.jwt :refer :all]
             [ring.mock.request :as mock])
   (:import [java.util Date]
@@ -11,21 +12,17 @@
            [com.nimbusds.jose.crypto RSASSASigner RSASSAVerifier]
            [com.nimbusds.jwt JWTClaimsSet SignedJWT]))
 
-(def jwk-set
-  "{\"keys\":[{\"kid\":\"zkbRZLbxWXhrqXAs6Lf3Gb-kQFB6LsjoPzNBuCto4-0\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"n\":\"hru33g0kyFxOmF7fRa5Kijv546Qe9nj_406jgcWelKuSTfJWxy79E8W8GoCNyplzTJgUVIFhUv1IN6ywOickX-iozec5Xzt2ed2lc6Sd0Urtho_4ZvGv7T2x5gEmCk02bE_CXyH8G2Jxv9wXrjd11llYXuC3C_27izyEKW0fwbT1qrG6AJb6F5jVBc4Os7mG21fmtOjmBg6jQdcOVtqlaMlP2Fgu5ZiM2UWeTXdHuRWQJ5ASg42BzdTW1WV3xu76cI-qgro3gacZa2ZdiQGyiTYTUR9dROzVL_W1uvrUJ5iss6PfZ8VYa8BRxYCmdFMNAuQilHiqtQpnSUbK2aZSsQ\",\"e\":\"AQAB\"}]}")
-
-(def jwk
-  "{\"kid\":\"zkbRZLbxWXhrqXAs6Lf3Gb-kQFB6LsjoPzNBuCto4-0\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"use\":\"sig\",\"n\":\"hru33g0kyFxOmF7fRa5Kijv546Qe9nj_406jgcWelKuSTfJWxy79E8W8GoCNyplzTJgUVIFhUv1IN6ywOickX-iozec5Xzt2ed2lc6Sd0Urtho_4ZvGv7T2x5gEmCk02bE_CXyH8G2Jxv9wXrjd11llYXuC3C_27izyEKW0fwbT1qrG6AJb6F5jVBc4Os7mG21fmtOjmBg6jQdcOVtqlaMlP2Fgu5ZiM2UWeTXdHuRWQJ5ASg42BzdTW1WV3xu76cI-qgro3gacZa2ZdiQGyiTYTUR9dROzVL_W1uvrUJ5iss6PfZ8VYa8BRxYCmdFMNAuQilHiqtQpnSUbK2aZSsQ\",\"e\":\"AQAB\"}")
-
 (deftest test-parse-rsa-key
   (testing "rsa parser"
-    (is (instance? RSAPublicKey (rsa-key jwk))))
+    (is (instance? RSAPublicKey (rsa-key (slurp (io/resource "jwk.json"))))))
   (testing "rsa set parser"
-    (is (instance? RSAPublicKey (rsa-key jwk-set 0)))))
+    (is (instance? RSAPublicKey (rsa-key (slurp (io/resource "jwk-set.json"))
+                                         0)))))
 
 (deftest test-get-jwt-token
-  (is (= "abc" (jwt-token (-> (mock/request :get "https://example.org")
-                              (mock/header "Authorization" "Bearer abc")))))
+  (let [token (slurp (io/resource "token"))]
+    (is (= token (jwt-token (-> (mock/request :get "https://example.org")
+                                (mock/header "Authorization" (str "Bearer " token)))))))
   (is (nil? (jwt-token (mock/request :get "https://example.org")))))
 
 (defn rsa-key-pair []
@@ -51,57 +48,58 @@
 (defn date [offset]
   (Date. (+ (.getTime (Date.)) (* offset 1000))))
 
+(def issuer "http://example-issuer.org")
+
 (deftest test-verified-claims
   (let [key-pair (rsa-key-pair)
         token (signed-jwt (signer key-pair)
                           "alice"
-                          "http://example.org"
+                          issuer
                           {:exp (date 10)
                            :nbf (date -1)
                            :iat (date 0)})
         expired-token (signed-jwt (signer key-pair)
                                   "alice"
-                                  "http://example.org"
+                                  issuer
                                   {:exp (date -10)})
         too-soon-token (signed-jwt (signer key-pair)
                                    "alice"
-                                   "http://example.org"
+                                   issuer
                                    {:nbf (date 10)})
 
         bad-token (signed-jwt (signer (rsa-key-pair))
                               "alice"
-                              "http://example.org"
+                              issuer
                               {})
         invalid-token "foo"
         verifier (RSASSAVerifier. (.getPublic key-pair))]
-    (is (map? (verified-claims token verifier {})))
-    (is (map? (verified-claims token verifier {:iat-interval [10 10]})))
-    (is (nil? (verified-claims token verifier {:iat-interval [-5 10]})))
-    (is (nil? (verified-claims token verifier {:iat-interval [10 -5]})))
-    (is (nil? (verified-claims bad-token verifier {})))
-    (is (thrown? ParseException (verified-claims invalid-token verifier {})))
-    (is (nil? (verified-claims expired-token verifier {})))
-    (is (nil? (verified-claims too-soon-token verifier {})))))
+    (is (map? (verified-claims token verifier issuer {})))
+    (is (map? (verified-claims token verifier issuer {:iat-interval [10 10]})))
+    (is (nil? (verified-claims token verifier issuer {:iat-interval [-5 10]})))
+    (is (nil? (verified-claims token verifier issuer {:iat-interval [10 -5]})))
+    (is (nil? (verified-claims bad-token verifier issuer {})))
+    (is (thrown? ParseException (verified-claims invalid-token verifier issuer {})))
+    (is (nil? (verified-claims expired-token verifier issuer {})))
+    (is (nil? (verified-claims too-soon-token verifier issuer {})))))
 
 (deftest test-wrap-jwt-claims
   (let [key-pair (rsa-key-pair)
         token (signed-jwt (signer key-pair)
                           "alice"
-                          "http://example.org"
+                          issuer
                           {})
         bad-token (signed-jwt (signer (rsa-key-pair))
                               "alice"
-                              "http://example.org"
+                              issuer
                               {})
         invalid-token "foo"
         request (fn [token]
                   (-> (mock/request :get "https://example.org")
-                       (mock/header "Authorization" (str "Bearer " token))))
+                      (mock/header "Authorization" (str "Bearer " token))))
         handler (wrap-jwt-claims :jwt-claims
-                                 (.getPublic key-pair))]
+                                 (.getPublic key-pair)
+                                 issuer)]
 
     (is (map? (handler (request token))))
     (is (nil? (handler (request bad-token))))
     (is (nil? (handler (request invalid-token))))))
-
-;; (run-tests)
