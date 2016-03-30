@@ -3,6 +3,7 @@
   (:require
    [cheshire.core :as json]
    [clj-time.coerce :as c]
+   [clj-time.jdbc]
    [clojure.java.jdbc :as jdbc])
   (:import
    java.sql.Timestamp
@@ -28,7 +29,7 @@
 ;; From json & jsonb
 
 (defn pgobj->val
-  [pgobj]
+  [^PGobject pgobj]
   (let [t (.getType pgobj)
         v (.getValue pgobj)]
     (case t
@@ -42,11 +43,10 @@
     (pgobj->val pgobj)))
 
 
-;; From Timestamp
-
-(extend-protocol jdbc/IResultSetReadColumn
-  Timestamp
-  (result-set-read-column [ts _ _]
-    (-> ts
-        c/from-sql-time
-        c/to-long)))
+;; ;; From Timestamp
+;; (extend-protocol jdbc/IResultSetReadColumn
+;;   Timestamp
+;;   (result-set-read-column [ts _ _]
+;;     (-> ts
+;;         c/from-sql-time
+;;         c/to-long)))
