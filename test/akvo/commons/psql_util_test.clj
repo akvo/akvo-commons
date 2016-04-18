@@ -7,61 +7,70 @@
    [clojure.test :refer [deftest testing is]]
    [clojure.java.jdbc :as jdbc])
   (:import
-   ;; java.sql.Timestamp
+   java.sql.Timestamp
    org.postgresql.util.PGobject))
 
 
-(defn- boomerang
-  "Pack and unpack via PGobject."
+(defn- val->PGobject->val
+  "Testing helper fn that pack and unpack via PGobject."
   [v]
   (jdbc/result-set-read-column (jdbc/sql-value v)
                                nil
                                nil))
 
-(deftest roundtrip
-  (testing "nil"
 
+(deftest basics
+
+  (testing "nil"
     (is (= nil
-           (boomerang nil))))
+           (val->PGobject->val  nil))))
 
   (testing "Empty sting"
     (is (= ""
-           (boomerang ""))))
+           (val->PGobject->val ""))))
+
+  (testing "String"
+    (is (= "str"
+           (val->PGobject->val "str"))))
+
+  (testing "Number"
+    (is (= 0
+           (val->PGobject->val 0))))
+
+  (testing "Boolean"
+    (is (= true
+           (val->PGobject->val true)))))
+
+
+(deftest json
 
   (testing "hash map"
     (is (= {}
-           (boomerang {})))
+           (val->PGobject->val {})))
 
     (is (= {"key" "value"}
-           (boomerang {"key" "value"})))
+           (val->PGobject->val {"key" "value"})))
 
     (is (= {"key" {"key" "value"}}
-           (boomerang {"key" {"key" "value"}}))))
+           (val->PGobject->val {"key" {"key" "value"}}))))
 
   (testing "vector"
     (is (= []
-           (boomerang [])))
+           (val->PGobject->val [])))
 
     (is (= ["first" "second"]
-           (boomerang ["first" "second"]))))
-
-  ;; (testing "org.joda.time.DateTime"
-  ;;   (let [t0 (t/date-time 1986 10 14 4 3 27 456)
-  ;;         t1 (boomerang t0)]
-  ;;     (prn (type t1))
-  ;;     (is (t/equal? t0 t1))))
-
-  ;; (testing "timestamp"
-  ;;   (let [t0 (c/to-long (t/date-time 1981 3 25))
-  ;;         t1 (boomerang t0)]
-  ;;     (is (= t0 t1))))
+           (val->PGobject->val ["first" "second"])))))
 
 
-  ;; (testing "timestamp"
-  ;;   (let [t0 (c/to-long (t/date-time 1981 3 25))
-  ;;         o (doto (PGobject.)
-  ;;             (.setType "timestamp")
-  ;;             (.setValue (str t0)))
-  ;;         t1 (jdbc/result-set-read-column o nil nil)]
-  ;;     (is (= t0 t1))))
-  )
+(deftest dates
+
+  (testing "Correct date"
+    (let [t0 (t/date-time 1986 10 14 4 3 27 456)
+          t1 (val->PGobject->val t0)]
+      (is (t/equal? t0 t1))))
+
+  (testing "Same timestamps (long)"
+
+    (let [t0 (c/to-long (t/date-time 1981 3 25))
+          t1 (val->PGobject->val t0)]
+      (is (= t0 t1)))))
