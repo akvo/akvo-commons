@@ -1,7 +1,8 @@
 (ns akvo.commons.psql-util
-  "Require this and Postgres knows how to speak json, jsonb."
+  "Require this and Postgres knows how to speak json, jsonb & timestamp."
   (:require
    [cheshire.core :as json]
+   [clj-time.coerce :as c]
    [clojure.java.jdbc :as jdbc])
   (:import
    java.sql.Timestamp
@@ -39,3 +40,13 @@
   PGobject
   (result-set-read-column [pgobj _ _]
     (pgobj->val pgobj)))
+
+
+;; Expose timestamps as long
+
+(extend-protocol jdbc/IResultSetReadColumn
+  Timestamp
+  (result-set-read-column [ts _ _]
+    (-> ts
+        c/from-sql-time
+        c/to-long)))
