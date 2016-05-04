@@ -1,14 +1,12 @@
 (ns akvo.commons.psql-util-test
-  (:require
-   [akvo.commons.psql-util]
-   [clj-time.coerce :as c]
-   [clj-time.core :as t]
-   [clojure.data :refer [diff]]
-   [clojure.test :refer [deftest testing is]]
-   [clojure.java.jdbc :as jdbc])
-  (:import
-   java.sql.Timestamp
-   org.postgresql.util.PGobject))
+  (:require [akvo.commons.psql-util :refer [pgobj->val]]
+            [clj-time.coerce :as c]
+            [clj-time.core :as t]
+            [clojure.data :refer [diff]]
+            [clojure.test :refer [deftest testing is]]
+            [clojure.java.jdbc :as jdbc])
+  (:import java.sql.Timestamp
+           org.postgresql.util.PGobject))
 
 
 (defn- val->PGobject->val
@@ -18,8 +16,14 @@
                                nil
                                nil))
 
-
 (deftest basics
+
+  (testing "types"
+    (let [val "[\"2016-05-04 16:50:23.118004+02\",infinity)"
+          pgo (doto (PGobject.)
+                (.setValue val)
+                (.setType "tstzrange"))]
+        (is (= val (pgobj->val pgo)))))
 
   (testing "nil"
     (is (= nil
