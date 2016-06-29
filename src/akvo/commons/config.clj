@@ -1,4 +1,4 @@
-;  Copyright (C) 2013-2015 Stichting Akvo (Akvo Foundation)
+;  Copyright (C) 2013-2016 Stichting Akvo (Akvo Foundation)
 ;
 ;  This file is part of Akvo FLOW.
 ;
@@ -36,7 +36,8 @@
   [url]
   (last (str/split (first (str/split url #"\.s3\.amazonaws\.com")) #"//")))
 
-(defn- get-config [^File file]
+(defn get-config
+  [^File file]
   (let [appengine-web (-> file .getAbsolutePath (AppEngineWebXmlReader. "") .readAppEngineWebXml)
         app-id (.getAppId appengine-web)
         props (.getSystemProperties appengine-web)
