@@ -13,7 +13,6 @@
 ;  The full license text can also be seen at <http://www.gnu.org/licenses/agpl.html>.
 
 (ns akvo.commons.gae
-  (:require [taoensso.timbre :refer (info debugf error)])
   (:import java.util.Date
     [com.google.appengine.tools.remoteapi RemoteApiInstaller RemoteApiOptions]
     [com.google.appengine.api.datastore DatastoreService DatastoreServiceFactory
@@ -81,7 +80,6 @@
 (defn put!
   "Creates a new Entity using Remote API"
   [^DatastoreService ds entity-name props]
-  (debugf "Creating new entity - entity-name: %s - props: %s" entity-name props)
   (let [entity (Entity. ^String entity-name)
         ts (Date.)]
     (doseq [k (keys props)]
