@@ -50,6 +50,7 @@
         cartodb-api-key (get props "cartodbApiKey")
         cartodb-sql-api (get props "cartodbSqlApi")
         service-account-id (get props "serviceAccountId")
+        caddisfly-tests-file-url (get props "caddisflyTestsFileUrl")
         private-key-file (format "%s/%s.p12" (.getParent file) app-id)]
     {:app-id app-id
      :alias app-alias
@@ -60,6 +61,7 @@
      :apiKey apiKey
      :cartodb-api-key cartodb-api-key
      :cartodb-sql-api cartodb-sql-api
+     :caddisfly-tests-file-url caddisfly-tests-file-url
      :service-account-id service-account-id
      :private-key-file private-key-file}))
 

@@ -2,8 +2,4 @@ language:
 - clojure
 sudo: false
 script:
-- lein2 do clean, check, test
-notifications:
-  hipchat:
-    rooms:
-      secure: TCw9WXMRMLDbwM2Xjq2goB5Q5oqd0vFqgPjHElZPdD8pSzkOG4zVM9nWIHrLmEe1H5bFd7t7W7xnKEgO22iyR8cFmsXQsm5AB8Ui6aulP1wSSIAAViOR+Iz7DWbE5Fi6+pHWxQcCsNq1LUuEnduyj3iyj2iTbxeLlGuOTRIGSwo=
+- lein do clean, check, test
