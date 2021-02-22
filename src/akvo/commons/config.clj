@@ -23,6 +23,8 @@
     [me.raynes.fs :as fs]))
 
 
+(defonce errors-config (atom []))
+
 (defonce configs (atom {}))
 
 (defonce instance-alias (atom {}))
@@ -99,8 +101,16 @@
         bucket-fn (fn [res k v]
                     (assoc res k (first v)))
         alias-fn (fn [res k v]
-                   (assoc res k (:alias (first v))))]
-    (reset! configs (reduce-kv bucket-fn {} (group-by :app-id cfgs)))
+                   (assoc res k (:alias (first v))))
+        configs* (reduce-kv bucket-fn {} (group-by :app-id cfgs))
+        errors-config* (if (not=
+                            (count cfgs)
+                            (count (keys configs)))
+                         [{:config-data-inconsistency {:processed-configs (count (keys configs))
+                                                       :included-configs (count cfgs)}}]
+                         [])]
+    (reset! configs configs*)
+    (reset! errors-config errors-config*)
     (reset! s3bucket->app-id (into {} (map (juxt :s3bucket :app-id) cfgs)))
     (reset! instance-alias (reduce-kv alias-fn {} (group-by :domain cfgs)))))
 
