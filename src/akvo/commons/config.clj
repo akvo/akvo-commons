@@ -105,7 +105,7 @@
         configs* (reduce-kv bucket-fn {} (group-by :app-id cfgs))
         errors-config* (if (not=
                             (count cfgs)
-                            (count (keys configs)))
+                            (count (keys configs*)))
                          [{:config-data-inconsistency {:processed-configs (count (keys configs))
                                                        :included-configs (count cfgs)}}]
                          [])]
