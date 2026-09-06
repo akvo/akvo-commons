@@ -41,7 +41,13 @@
 (defn get-config
   [^File file]
   (let [appengine-web (-> file .getAbsolutePath (AppEngineWebXmlReader. "") .readAppEngineWebXml)
-        app-id (.getAppId appengine-web)
+        ;; First-generation descriptors declare the id as <application>. Second-generation
+        ;; App Engine forbids that element -- the id comes from the deploy command instead --
+        ;; so there is nothing in the file to read and .getAppId returns nil. Fall back to the
+        ;; directory holding the descriptor, which is the project id in practice: it is what
+        ;; the instance folder is named after, and what the .p12 below is named after too.
+        app-id (or (not-empty (.getAppId appengine-web))
+                   (.getName (.getParentFile file)))
         props (.getSystemProperties appengine-web)
         app-alias (get props "alias")
         access-key (get props "aws_identifier")
@@ -106,7 +112,7 @@
         errors-config* (if (not=
                             (count cfgs)
                             (count (keys configs*)))
-                         [{:config-data-inconsistency {:processed-configs (count (keys configs))
+                         [{:config-data-inconsistency {:processed-configs (count (keys configs*))
                                                        :included-configs (count cfgs)}}]
                          [])]
     (reset! configs configs*)
