@@ -3,9 +3,21 @@
   :url "http://akvo.org"
   :license {:name "GNU Affero General Public License v3.0"
             :url "https://www.gnu.org/licenses/agpl-3.0.html"}
-  :signing {:gpg-key "devops@akvo.org"}
-  :deploy-repositories [["releases" :clojars]
-                        ["snapshots" :clojars]]
+  ;; Unsigned, and deliberately so. Releases up to 0.4.8 were signed with a
+  ;; devops@akvo.org key that now lives only on whichever machine last cut a
+  ;; release, which is what left 0.4.9 unpublished while the code that needed it
+  ;; was already merged. Signing from CI would mean putting that private key in
+  ;; repository secrets, readable by anyone who can push a workflow here.
+  ;;
+  ;; Clojars does not require signatures, and org.akvo.flow/akvo-flow has always
+  ;; published without them from the same CI, so this matches what the
+  ;; organisation already does rather than inventing a weaker practice for one
+  ;; library. Removing `:signing` with it -- leaving the key configured while
+  ;; disabling its only use reads as an oversight.
+  :deploy-repositories [["releases" {:url "https://repo.clojars.org"
+                                     :sign-releases false}]
+                        ["snapshots" {:url "https://repo.clojars.org"
+                                      :sign-releases false}]]
   :dependencies [[cheshire "5.5.0"]
                  [clj-time "0.11.0"]
                  ;; 2.0.38 rather than 1.9.28: second-generation App Engine descriptors

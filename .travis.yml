@@ -1,5 +1,0 @@
-language:
-- clojure
-sudo: false
-script:
-- lein do clean, check, test
