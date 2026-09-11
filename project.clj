@@ -14,9 +14,21 @@
   ;; organisation already does rather than inventing a weaker practice for one
   ;; library. Removing `:signing` with it -- leaving the key configured while
   ;; disabling its only use reads as an oversight.
+  ;; Credentials are named per repository. Leiningen does not read a general
+  ;; LEIN_USERNAME/LEIN_PASSWORD pair for a repository that declares none: it
+  ;; finds no credentials, falls through to an interactive prompt, reads EOF on a
+  ;; CI runner and uploads empty ones. The 401 that follows says "authentication
+  ;; failed", which reads like a bad token rather than a missing declaration.
+  ;;
+  ;; `:env/clojars_username` names the environment variable CLOJARS_USERNAME, so
+  ;; these match the secrets in the workflow exactly.
   :deploy-repositories [["releases" {:url "https://repo.clojars.org"
+                                     :username :env/clojars_username
+                                     :password :env/clojars_password
                                      :sign-releases false}]
                         ["snapshots" {:url "https://repo.clojars.org"
+                                      :username :env/clojars_username
+                                      :password :env/clojars_password
                                       :sign-releases false}]]
   :dependencies [[cheshire "5.5.0"]
                  [clj-time "0.11.0"]
