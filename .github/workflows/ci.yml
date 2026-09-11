@@ -1,0 +1,108 @@
+name: CI
+
+# The repository had no working CI. `.travis.yml` still describes the test
+# command, but Travis has not run against it in years, so nothing checked a pull
+# request and nothing published a release.
+#
+# That is not merely untidy. 0.4.9 sat unpublished on master while the change it
+# carried was already merged and the downstream work waiting on it was blocked --
+# because releasing meant finding a machine that happened to hold a GPG key.
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java 11 rather than 8: the App Engine artifacts here are Java 8 bytecode
+      # and run happily on a later JVM, and 8 is increasingly awkward to obtain
+      # on hosted runners.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      # Installed from the official script rather than a marketplace action: it
+      # is two lines, and this is the only thing the job needs it for.
+      - name: Install Leiningen
+        run: |
+          curl -fsSL -o "${RUNNER_TEMP}/lein" \
+            https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+          chmod +x "${RUNNER_TEMP}/lein"
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
+
+      - name: Test
+        run: lein do clean, check, test
+
+  release:
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install Leiningen
+        run: |
+          curl -fsSL -o "${RUNNER_TEMP}/lein" \
+            https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+          chmod +x "${RUNNER_TEMP}/lein"
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
+
+      # The version in project.clj decides whether anything is published, rather
+      # than a tag. Clojars releases are immutable, so re-publishing an existing
+      # version is an error rather than a no-op -- and a workflow that fails
+      # every time master moves without a version bump is a workflow people stop
+      # reading. Checking first makes the job idempotent: merging a version bump
+      # releases it, merging anything else does nothing.
+      - name: Decide whether this version needs publishing
+        id: decide
+        run: |
+          version=$(sed -n 's|^(defproject org.akvo/commons "\([^"]*\)".*|\1|p' project.clj)
+          if [[ -z "${version}" ]]; then
+            echo "Could not read the version from project.clj" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          if curl -fsS -o /dev/null "https://repo.clojars.org/org/akvo/commons/${version}/"; then
+            echo "${version} is already on Clojars; nothing to do."
+            echo "publish=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "${version} is not on Clojars; will publish."
+            echo "publish=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Deploy to Clojars
+        if: steps.decide.outputs.publish == 'true'
+        env:
+          # A Clojars deploy token scoped to org.akvo/commons, not an account
+          # password: a token confined to this one artifact cannot publish
+          # anything else if this workflow is ever compromised.
+          LEIN_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          LEIN_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+        run: lein deploy releases
+
+      - name: Confirm it landed
+        if: steps.decide.outputs.publish == 'true'
+        run: |
+          # Clojars serves the artifact through a CDN, so a deploy that reported
+          # success can still 404 for a moment. Poll rather than assert once.
+          version='${{ steps.decide.outputs.version }}'
+          for _ in $(seq 1 10); do
+            if curl -fsS -o /dev/null "https://repo.clojars.org/org/akvo/commons/${version}/commons-${version}.pom"; then
+              echo "org.akvo/commons ${version} is on Clojars."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Deploy reported success but ${version} is not readable from Clojars." >&2
+          exit 1
