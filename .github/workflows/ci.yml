@@ -84,11 +84,18 @@ jobs:
       - name: Deploy to Clojars
         if: steps.decide.outputs.publish == 'true'
         env:
-          # A Clojars deploy token scoped to org.akvo/commons, not an account
-          # password: a token confined to this one artifact cannot publish
-          # anything else if this workflow is ever compromised.
-          LEIN_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
-          LEIN_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+          # Read by the :env/clojars_username and :env/clojars_password entries
+          # in project.clj's :deploy-repositories. Leiningen has no general
+          # LEIN_USERNAME/LEIN_PASSWORD fallback for a repository that names no
+          # credentials -- it prompts instead, and on a runner that means reading
+          # EOF and uploading empty ones.
+          #
+          # CLOJARS_PASSWORD is a deploy token scoped to org.akvo/commons rather
+          # than the account password. The akvo account has `*` on the whole
+          # group, so an unscoped credential here could publish kfk.avro-bridge
+          # and resumed as well; this workflow needs exactly one artifact.
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
         run: lein deploy releases
 
       - name: Confirm it landed
